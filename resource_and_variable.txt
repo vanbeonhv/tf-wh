@@ -1,0 +1,54 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "5.51.1"
+    }
+  }
+  required_version = ">= 0.14.9"
+}
+
+provider "aws" {
+  # Configuration options
+  region = "ap-southeast-1"
+}
+
+//Get from Data Source: aws_ami
+data "aws_ami" "ubuntu_ami_custom_name" {
+  filter{
+    name   = "name" 
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20240423"]
+  }
+}
+
+resource "aws_security_group" "sg" {
+  # ... other configuration ...
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+  }
+
+  ingress {
+    from_port   = 20
+    to_port     = 20
+    protocol    = "tcp"
+  }
+}
+
+variable project_name {
+  default = "marc"
+  type = string
+  description = "project-owner"
+}
+
+resource "aws_instance" "web1" {
+  ami           = data.aws_ami.ubuntu_ami_custom_name.id
+  instance_type = "t3.micro"
+  vpc_security_group_ids = [aws_security_group.sg.id]
+
+  tags = {
+    Name = "${var.project_name}-in1"
+  }
+}
